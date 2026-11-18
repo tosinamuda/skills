@@ -183,7 +183,7 @@ A screen must be readable as what it is made of, by a person and by a screen rea
 10. **A split must not change what is drawn.** Record the rendered markup before and after and compare; a passing test suite does not show a moved wrapper.
    ```bash
    # Record each screen's rendered markup before the change, make the change, record again, and compare.
-   node record-markup.mjs before/   # opens each screen state, saves document.body as HTML
+   node record-markup.mjs before/   # your own Playwright script: opens each screen state, saves document.body as HTML
    node record-markup.mjs after/
    diff -r before/ after/           # only the elements you meant to change should differ
    ```
