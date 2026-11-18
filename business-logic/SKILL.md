@@ -30,7 +30,7 @@ src/features/orders/
 
 Dependencies point one way: `components` → `hooks` → `api` and `utils` → `types` and `constants`. `utils/` never imports `api/` or `hooks/`; `api/` never imports `hooks/` or `components/`.
 
-This is the layout Bulletproof React uses, so it is familiar to most React developers. `utils/` here means the feature's business rules, so each file is named for its concern (`pricing.ts`, `productSearch.ts`); there is never a `utils.ts` or `helpers.ts` file that collects unrelated functions. State that outlives a screen, such as an upload several screens watch, goes in a `stores/` folder beside them.
+The folder names follow Bulletproof React, so they are familiar to most React developers. Two places differ from it on purpose. Bulletproof describes `utils/` only as "utility functions"; here it is where the feature's business rules go, so each file is named for its concern (`pricing.ts`, `productSearch.ts`); there is never a `utils.ts` or `helpers.ts` file that collects unrelated functions. State that outlives a screen, such as an upload several screens watch, goes in a `stores/` folder beside them. And Bulletproof puts the React Query hooks in `api/` with the requests; here `api/` stays free of React and the hooks go in `hooks/`, so the requests can be called and tested without a component.
 
 A small feature does not need every folder. A screen that only lists records can be a component, one hook and one api function. Add `utils/` the first time a rule appears.
 
