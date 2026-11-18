@@ -5,7 +5,7 @@ Agent skills, one folder each, in the `SKILL.md` format that Claude Code and oth
 | Skill | What it is for |
 | --- | --- |
 | [react-components](react-components/SKILL.md) | Semantic, composed, markup-first React: semantic elements, plain names, thin hooks that derive. |
-| [business-logic](business-logic/SKILL.md) | Where a React app's code goes (components, hooks, api, logic, types, constants), React Query included, and how to pull rules out of components into tested pure functions. |
+| [business-logic](business-logic/SKILL.md) | Where a React app's code goes (components, hooks, api, utils, types, constants), React Query included, and how to pull rules out of components into tested pure functions. |
 
 ## Install
 

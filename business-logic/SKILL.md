@@ -1,6 +1,6 @@
 ---
 name: business-logic
-description: Decide where a React app's code goes — components, hooks, api, logic, types and constants — so business rules are pure, unit-tested functions outside React, server calls live in plain api functions that React Query or a hook consumes, and components only draw. Covers how to pull logic woven into components and hooks out into tested functions. Use when a component or hook decides, filters, computes or makes server calls, when logic can only be tested by rendering, when setting up React Query, when choosing folders for a feature, or when the same rule is written in two places.
+description: Decide where a React app's code goes — components, hooks, api, utils, types and constants — so business rules are pure, unit-tested functions outside React, server calls live in plain api functions that React Query or a hook consumes, and components only draw. Covers how to pull logic woven into components and hooks out into tested functions. Use when a component or hook decides, filters, computes or makes server calls, when logic can only be tested by rendering, when setting up React Query, when choosing folders for a feature, or when the same rule is written in two places.
 ---
 
 # Business logic: where each kind of code goes
@@ -14,7 +14,7 @@ src/features/orders/
 ├── components/    what is drawn: JSX and its classes, nothing else
 ├── hooks/         React glue: state, effects, React Query hooks
 ├── api/           calls to the server: plain async functions, and their query options
-├── logic/         business rules: pure functions, each with a test beside it
+├── utils/         business rules: pure functions, each with a test beside it
 ├── types.ts       the feature's own types
 └── constants.ts   named values the rules and screens share
 ```
@@ -22,17 +22,19 @@ src/features/orders/
 | Folder | Holds | Imports React? | Tested by |
 | --- | --- | --- | --- |
 | `components/` | Markup. A component calls a hook and draws what it returns. | Yes | Rendering, for wiring only |
-| `hooks/` | `useState`, effects, `useQuery`, `useMutation`. A hook calls `api/` and `logic/`; it holds no rules itself. | Yes | Rarely needed, since it holds no rules |
+| `hooks/` | `useState`, effects, `useQuery`, `useMutation`. A hook calls `api/` and `utils/`; it holds no rules itself. | Yes | Rarely needed, since it holds no rules |
 | `api/` | One function for each server call, mapping the server's shapes to the feature's types; the query keys and `queryOptions` for them. | No (`queryOptions` from React Query is a plain function) | A fake `fetch`, or not at all if it only passes data through |
-| `logic/` | Rules and calculations: totals, checks, filters, sorting, what a screen shows. | No | Plain unit tests, no DOM |
+| `utils/` | Rules and calculations: totals, checks, filters, sorting, what a screen shows. | No | Plain unit tests, no DOM |
 | `types.ts` | Types the feature works with: `Order`, `Basket`, `Product`. | No | — |
 | `constants.ts` | Values with a name and a reason: `FREE_DELIVERY_FROM = 50`. | No | — |
 
-Dependencies point one way: `components` → `hooks` → `api` and `logic` → `types` and `constants`. `logic/` never imports `api/` or `hooks/`; `api/` never imports `hooks/` or `components/`.
+Dependencies point one way: `components` → `hooks` → `api` and `utils` → `types` and `constants`. `utils/` never imports `api/` or `hooks/`; `api/` never imports `hooks/` or `components/`.
 
-A small feature does not need every folder. A screen that only lists records can be a component, one hook and one api function. Add `logic/` the first time a rule appears.
+This is the layout Bulletproof React uses, so it is familiar to most React developers. `utils/` here means the feature's business rules, so each file is named for its concern (`pricing.ts`, `productSearch.ts`); there is never a `utils.ts` or `helpers.ts` file that collects unrelated functions. State that outlives a screen, such as an upload several screens watch, goes in a `stores/` folder beside them.
 
-## 1. `logic/` holds pure functions
+A small feature does not need every folder. A screen that only lists records can be a component, one hook and one api function. Add `utils/` the first time a rule appears.
+
+## 1. `utils/` holds the rules, as pure functions
 
 A rule takes everything it needs as arguments and returns a value. It does not read or set state, fetch, or log.
 
@@ -42,24 +44,24 @@ A rule takes everything it needs as arguments and returns a value. It does not r
 export const FREE_DELIVERY_FROM = 50;
 export const DELIVERY_COST = 4.95;
 
-// logic/pricing.ts
+// utils/pricing.ts
 import { DELIVERY_COST, FREE_DELIVERY_FROM } from "../constants";
 import type { BasketItem } from "../types";
 
 export const subtotal = (items: readonly BasketItem[]) => items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 export const deliveryCost = (subtotal: number) => (subtotal >= FREE_DELIVERY_FROM ? 0 : DELIVERY_COST);
 
-// logic/pricing.test.ts
+// utils/pricing.test.ts
 it("charges no delivery from the free-delivery amount", () => {
   expect(deliveryCost(50)).toBe(0);
   expect(deliveryCost(49.99)).toBe(4.95);
 });
 ```
 
-What a screen shows is a rule too, and lives in `logic/` as a function returning a tagged state:
+What a screen shows is a rule too, and lives in `utils/` as a function returning a tagged state:
 
 ```ts
-// logic/checkoutView.ts
+// utils/checkoutView.ts
 export type CheckoutView = { kind: "empty" } | { kind: "tooSmall"; missing: number } | { kind: "ready"; total: number };
 
 export function checkoutView(items: readonly BasketItem[], minimum: number): CheckoutView {
@@ -102,7 +104,7 @@ export const productsOptions = (category: string) =>
 export function useProductSearch(category: string) {
   const [query, setQuery] = useState("");                         // what the user typed
   const products = useQuery(productsOptions(category));            // what the server sent; React Query owns it
-  const shown = productsMatching(products.data ?? [], query);      // derived, by a rule in logic/
+  const shown = productsMatching(products.data ?? [], query);      // derived, by a rule in utils/
   return { query, setQuery, shown, loading: products.isPending, error: products.error };
 }
 ```
@@ -162,7 +164,7 @@ When a component or hook decides, filters, sorts or computes:
 1. **Find the decision.** An `if` about data, a `.filter` or `.sort`, a calculation in `useMemo`, a check in an event handler.
 2. **Make its inputs explicit.** Everything it reads from state, props or refs becomes a parameter.
 3. **Return a value instead of setting state.** `setTooSmall(total < minimum)` becomes a function that returns the answer.
-4. **Move it to `logic/`, in a file named for its concern** (`pricing.ts`, `productSearch.ts`), never `utils.ts` or `helpers.ts`. A number in it with a meaning moves to `constants.ts`.
+4. **Move it to `utils/`, in a file named for its concern** (`pricing.ts`, `productSearch.ts`), never `utils.ts` or `helpers.ts`. A number in it with a meaning moves to `constants.ts`.
 5. **Test it there, then break it on purpose.** Change the rule (`>=` to `>`) and confirm a named test fails. A test that still passes proves nothing.
 6. **Replace the original code with one call.**
 
@@ -174,7 +176,7 @@ function BasketFooter({ items }: Props) {
   return <footer>Delivery: {delivery === 0 ? "free" : delivery}</footer>;
 }
 
-// After: the component draws, and the rules are tested in logic/.
+// After: the component draws, and the rules are tested in utils/.
 function BasketFooter({ items }: Props) {
   const delivery = deliveryCost(subtotal(items));
   return <footer>Delivery: {delivery === 0 ? "free" : delivery}</footer>;
@@ -183,6 +185,6 @@ function BasketFooter({ items }: Props) {
 
 ## Where tests run
 
-- `logic/` runs in a plain test environment with no DOM. **Needing a DOM to test a rule means the rule is still tangled with rendering.**
+- `utils/` runs in a plain test environment with no DOM. **Needing a DOM to test a rule means the rule is still tangled with rendering.**
 - `api/` is tested with a fake `fetch` when it maps or decides something; a function that only passes data through needs no test of its own.
-- Component tests check the wiring: the right part shows, and events reach the hook. The rules are already proved in `logic/`.
+- Component tests check the wiring: the right part shows, and events reach the hook. The rules are already proved in `utils/`.
