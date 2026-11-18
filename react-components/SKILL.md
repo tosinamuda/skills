@@ -8,7 +8,41 @@ description: Write React components that are semantic, composed and markup-first
 A screen must be readable as what it is made of, by a person and by a screen reader. Apply these rules when writing or changing React components, in any project.
 
 1. **Elements say what they are.** Use `main`, `header`, `footer`, `nav`, `section`, `search`, `ul`/`li`, `button`, `time`, `form`. A `div` or `span` is only for a box that exists for layout or scrolling.
-2. **A screen is a composition.** Its JSX is a short list of named components. A screen has no class strings; each part owns its own.
+2. **A screen is a composition of named parts.** A screen's JSX reads like an outline of the screen in the product's own words: one named component for each part a person would point at. Each part is a small component that owns its semantic element and its classes, so the screen itself has no raw HTML tags and no class strings. Reading the screen tells you what is on it; opening a part tells you how it looks.
+   ```tsx
+   // Not this: the screen is a tree of tags and classes, and what each box is has to be worked out.
+   <div className="flex h-screen flex-col gap-5 pt-7">
+     <div className="flex items-center gap-3 pl-14">
+       <span className="text-text-helper">CBM Meet App</span>
+       <span className="font-semibold">{name}</span>
+     </div>
+     <div className="min-h-0 flex-1 overflow-y-auto">
+       {groups.map((g) => (
+         <div key={g.group} className="flex flex-col gap-3">
+           <div className="text-[1.625rem] font-semibold">{g.group}</div>
+           <div className="flex gap-6 overflow-x-auto">{/* cards */}</div>
+         </div>
+       ))}
+     </div>
+     <button className="absolute bottom-2 left-11 rounded-full" onClick={onBack}>←</button>
+   </div>
+
+   // This: the screen is its parts, named for what they are.
+   <ChoiceLayout heading="Choose an activity">
+     <ChoiceHeader>
+       <AppName />
+       <SessionName name={name} />
+     </ChoiceHeader>
+     <ActivityRows groups={groups} onChoose={choose} />
+     <BackButton label="Back to the dashboard" onBack={onBack} />
+   </ChoiceLayout>
+
+   // Each part holds its own element and classes, once.
+   function ChoiceHeader({ children }: { children: ReactNode }) {
+     return <header className="flex items-center gap-3 pl-14">{children}</header>;
+   }
+   ```
+   A part is worth naming when a person would call it something ("the header", "a row of cards", "the back button"). A wrapper that exists only for spacing stays inside the part that needs it, not in the screen.
 3. **Names a second-year student would guess.** Use the plain word for the thing: `Layout`, `Header`, `Row`, `Card`, `List`, `Panel`, `Button`, `Margin`. No metaphor and no trade jargon (`Frame`, `Rail`, `Strip`, `Gutter`, `Chrome`, `Shell`) unless the product's own users say that word. Test: someone who has never seen the code can say what `<ActivityRow>` draws.
 4. **Markup first.** A component's body is its JSX. More than a few lines of state, effects or derivation before the `return` go into one hook named for what it models (`useActivityChoice`), which returns facts and actions.
 5. **One tagged state for exclusive views.** When a screen shows exactly one of several things, a pure function or a hook returns a discriminated union that carries each state's data, and the screen is an exhaustive `switch` over it. No nested ternaries and no chain of early returns.
