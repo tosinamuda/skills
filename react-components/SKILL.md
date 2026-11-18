@@ -8,6 +8,37 @@ description: Write React components that are semantic, composed and markup-first
 A screen must be readable as what it is made of, by a person and by a screen reader. Apply these rules when writing or changing React components, in any project.
 
 1. **Elements say what they are.** Use `main`, `header`, `footer`, `nav`, `section`, `search`, `ul`/`li`, `button`, `time`, `form`. A `div` or `span` is only for a box that exists for layout or scrolling.
+   ```tsx
+   // Not this: every box is a div, so a screen reader hears one long run of text, and
+   // the "button" cannot be reached by Tab or pressed with Enter.
+   <div className="screen">
+     <div className="top">
+       <span className="clock">10:42</span>
+       <div className="search"><input placeholder="Search" /></div>
+     </div>
+     <div className="row">
+       <div className="row-name">Explore</div>
+       <div className="cards">
+         <div className="card" onClick={choose}>Brainstorm</div>
+       </div>
+     </div>
+   </div>
+
+   // This: each element says what it is, so landmarks, lists and buttons come for free.
+   <main>
+     <header>
+       <time dateTime="10:42">10:42</time>
+       <search><input type="search" aria-label="Search activities" /></search>
+     </header>
+     <section aria-labelledby="explore">
+       <h2 id="explore">Explore</h2>
+       <ul>
+         <li><button type="button" onClick={choose}>Brainstorm</button></li>
+       </ul>
+     </section>
+   </main>
+   ```
+   What each choice gives: `main` and `header` let a screen reader jump between parts of the page; `section` with its `h2` names the region; `ul`/`li` says "list, 5 items"; `button` is reachable by Tab and pressed by Enter and Space with no extra code; `time` and `search` say what their content is. Keep a `div` where nothing is meant, such as the box that scrolls a row sideways.
 2. **A screen is a composition of named parts.** A screen's JSX reads like an outline of the screen in the product's own words: one named component for each part a person would point at. Each part is a small component that owns its semantic element and its classes, so the screen itself has no raw HTML tags and no class strings. Reading the screen tells you what is on it; opening a part tells you how it looks.
    ```tsx
    // Not this: the screen is a tree of tags and classes, and what each box is has to be worked out.
