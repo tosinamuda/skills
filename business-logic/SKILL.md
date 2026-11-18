@@ -17,8 +17,7 @@ src/features/orders/
 ├── model/        business rules and flows: plain functions with no React, each with a test beside it
 ├── stores/       state several screens share or that outlives a screen
 ├── types/        the feature's own types
-├── utils/        small generic helpers: formatting, dates, parsing
-└── index.ts      the feature's public face: the only file other code may import from
+└── utils/        small generic helpers: formatting, dates, parsing
 ```
 
 | Folder | Holds | Imports React? | Tested by |
@@ -35,23 +34,22 @@ The line between `model/` and `utils/`: a function that would change if the busi
 
 Dependencies point one way: `components` → `hooks` and `api` → `model` → `types`. `model/` never imports `api/` hooks, `hooks/`, `stores/` or `components/`. Shared code across features lives in `src/components`, `src/hooks`, `src/lib`, `src/types`, `src/utils` and `src/config`, as in Bulletproof React.
 
-### Import rules, from Feature-Sliced Design
+### Features do not import each other
 
-- **Code outside a feature imports only from its `index.ts`.** The index exports what the rest of the app may use, such as a page component, a hook or a type, and nothing else. Everything else in the feature can change without breaking another one.
-- **A feature never imports another feature.** When two features need the same thing, it moves down to the shared folders (`src/components`, `src/hooks`, `src/lib`, `src/types`, `src/utils`). Pages and the app compose features; features do not reach into each other.
+A feature never imports another feature. When two features need the same thing, it moves down to the shared folders (`src/components`, `src/hooks`, `src/lib`, `src/types`, `src/utils`). Pages and the app put features together; features do not reach into each other. Bulletproof React and Feature-Sliced Design both require this.
 
-```ts
-// src/features/orders/index.ts
-export { CheckoutPage } from "./components/checkout-page";
-export { useBasket } from "./hooks/use-basket";
-export type { Order } from "./types";
+Enforce it with the linter, so it holds without anyone remembering it. Bulletproof React uses `import/no-restricted-paths`, with one zone for each feature:
 
-// Elsewhere: import from the feature, never from inside it.
-import { CheckoutPage } from "@/features/orders";              // yes
-import { deliveryCost } from "@/features/orders/model/pricing";  // no: reaches past the index
+```js
+"import/no-restricted-paths": ["error", {
+  zones: [
+    { target: "./src/features/orders", from: "./src/features", except: ["./orders"] },
+    { target: "./src/features/catalog", from: "./src/features", except: ["./catalog"] },
+  ],
+}],
 ```
 
-Enforce both with the linter, so they hold without anyone remembering them. ESLint's `no-restricted-imports` can forbid `@/features/*/*` paths, and Bulletproof React's `import/no-restricted-paths` setup forbids one feature importing another.
+Import a feature's files directly (`@/features/orders/components/checkout-page`), with no `index.ts` that re-exports the whole feature. Bulletproof React advises against such files: they stop Vite dropping unused code and slow the build. (Feature-Sliced Design asks for one; this is where the two differ, and this skill follows Bulletproof.)
 
 A small feature does not need every folder. A screen that only lists records can be a component and one `api/` file. Add `model/` the first time a rule appears.
 
